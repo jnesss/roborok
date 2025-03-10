@@ -64,11 +64,11 @@ To train your own models, you are welcome to use our annotated datasets:
 
 1. Upload the downloaded dataset (drag and drop the folder)
 2. The platform will process your images and annotations
+3. After upload completes, you'll see your images with annotations
 
 ![Uploading Dataset](images/newproject2.png)
 
-3. After upload completes, you'll see your images with annotations
-4. Click "Add Images to Dataset" to finalize the import
+4. Click "Add Approved to Dataset" to finalize the import
 
 ![Adding Images to Dataset](images/newproject4.png)
 
@@ -77,7 +77,7 @@ To train your own models, you are welcome to use our annotated datasets:
 1. Create a new version of your dataset
 2. Configure preprocessing:
    - Auto-Orient: Applied
-   - Resize: Stretch to 640×480
+   - Resize: Stretch to 640×480 (aspect ratio of captured screenshots)
 
 ![Configure Resize Settings](images/newproject7.png)
 ![Configure Resize Settings](images/newproject8.png)

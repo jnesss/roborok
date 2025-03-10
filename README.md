@@ -2,7 +2,7 @@
 
 A sophisticated automation system that uses Roboflow's computer vision capabilities to intelligently play Rise of Kingdoms. This project demonstrates integration of computer vision AI with game automation.
 
-<img src="https://path-to-your-demo-image.png" alt="RoboRok in action" width="600"/>
+![RoboRok in action](images/detecting2.png)
 
 ## 🚀 Quickstart Guide (5 Minutes)
 
@@ -61,6 +61,20 @@ RoboRok uses two distinct Roboflow models:
 
 [Learn more about the models and training data](./TRAINING_DATA.md)
 
+## 🎮 RoboRok in Action
+
+### Tutorial Automation
+![Tutorial Detection](images/detecting2.png)
+The system precisely identifies tutorial elements with high confidence scores (often >95%), ensuring reliable automation of the tedious tutorial sequence.
+
+### Gameplay Analysis
+![Gameplay Detection](images/detecting3.png)
+During normal gameplay, RoboRok analyzes the screen to detect multiple game elements simultaneously, enabling intelligent decision-making.
+
+### Console Interface
+![Command Interface](images/running.png)
+The intuitive command interface lets you control the automation in real-time.
+
 ## ⚙️ Features
 
 - **Computer Vision Integration:** Uses Roboflow's vision AI to detect game elements and make decisions
@@ -91,7 +105,7 @@ See the [detailed setup guide](./SETUP.md) for complete installation instruction
 
 ## 🧪 Training Your Own Models
 
-You can train your own computer vision model for RoboRok!  Roboflow is awesome!  You'll love using it!  Follow our [training guide](./TRAINING_DATA.md).
+You can train your own computer vision model for RoboRok! Roboflow is awesome! You'll love using it! Follow our [training guide](./TRAINING_DATA.md).
 
 ## 📝 License
 

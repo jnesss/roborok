@@ -1,0 +1,49 @@
+{
+  "global": {
+    "roboflow_api_key": "API_KEY_HERE",
+    "roboflow_tutorial_model_id": "rok_tutorial/7",
+    "roboflow_gameplay_model_id": "rok_gameplay/16",
+    "refresh_interval_ms": 1000,
+    "report_endpoint": "http://localhost:3000/api/stats",
+    "reporting_interval_s": 300
+  },
+  "instances": {
+    "instance1": {
+      "device_id": "127.0.0.1:5555",
+      "preferred_civilization": "china",
+      "claim_quests": true,
+      "claim_only_main_quest": false,
+      "enable_scout_micromanagement": true
+    }
+  },
+  "gameplay": {
+    "adb_path": "/Applications/BlueStacks.app/Contents/MacOS/hd-adb",
+    "startup_tasks": [
+      "clear_trees",
+      "recruit_second_builder"
+    ],
+    "max_city_hall_level": 25,
+    "preferred_alliance": "YourAllianceName",
+    "join_random_alliance": true,
+    "research_path": [
+      "agriculture",
+      "military_science",
+      "iron_working",
+      "mathematics"
+    ],
+    "building_levels": {
+      "city_hall": 25,
+      "barracks": 25,
+      "archery_range": 25,
+      "stable": 25,
+      "siege_workshop": 25,
+      "academy": 25
+    },
+    "troop_levels": {
+      "infantry": 0,
+      "archers": 0,
+      "cavalry": 0,
+      "siege": 0
+    }
+  }
+}

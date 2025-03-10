@@ -1,0 +1,75 @@
+{
+  "instance1": {
+    "id": "instance1",
+    "device_id": "127.0.0.1:5555",
+    "tutorial_completed": false,
+    "tutorial_upgrade_complete_clicked": false,
+    "tutorial_final_arrow_clicked": false,
+    "startup_tasks_completed": false,
+    "tree_clearing_completed": false,
+    "second_builder_added": false,
+    "city_hall_level": 2,
+    "last_screenshot_path": "",
+    "last_report_time": "0001-01-01T00:00:00Z",
+    "game_state": {
+      "power": 0,
+      "resources": {
+        "food": 0,
+        "wood": 0,
+        "stone": 0,
+        "gold": 0,
+        "gems": 0
+      },
+      "buildings_in_progress": {}
+    },
+    "action_points": {
+      "current": 0,
+      "max": 0,
+      "last_update": "0001-01-01T00:00:00Z"
+    },
+    "vip": {
+      "level": 0,
+      "last_claim_time": "0001-01-01T00:00:00Z"
+    },
+    "scout_state": {
+      "current_x": 0,
+      "current_y": 0,
+      "is_moving": false,
+      "last_move_time": "0001-01-01T00:00:00Z"
+    },
+    "builder_state": {
+      "second_builder_end_time": "0001-01-01T00:00:00Z"
+    },
+    "tavern_state": {
+      "last_silver_chest_time": "0001-01-01T00:00:00Z",
+      "last_gold_chest_time": "0001-01-01T00:00:00Z"
+    },
+    "building_positions": {
+      "farm": {
+        "X": 0,
+        "Y": 0
+      },
+      "quarry": {
+        "X": 0,
+        "Y": 0
+      },
+      "lumber_mill": {
+        "X": 0,
+        "Y": 0
+      },
+      "goldmine": {
+        "X": 0,
+        "Y": 0
+      },
+      "hospital": {
+        "X": 0,
+        "Y": 0
+      }
+    },
+    "build_order": {
+      "completed_tasks": [],
+      "upcoming_tasks": [],
+      "last_attempt_time": "0001-01-01T00:00:00Z"
+    }
+  }
+}

@@ -53,7 +53,7 @@ This guide walks you through the complete setup process for RoboRok, from instal
 2. Create and train your models as described in [TRAINING_DATA.md](./TRAINING_DATA.md)
 3. To find your API key, go to the workspace settings or API Keys section:
 
-![Roboflow API Key Location](images/api_key.png)
+![Roboflow API Key Location](images/apikey.png)
 
 4. Copy your API key (you'll need it for the config file)
 

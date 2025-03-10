@@ -1,8 +1,8 @@
 {
   "global": {
     "roboflow_api_key": "YOUR_API_KEY_HERE", // Your Roboflow API key from dashboard
-    "roboflow_tutorial_model_id": "rok_tutorial/7", // Model ID for tutorial detection
-    "roboflow_gameplay_model_id": "rok_gameplay/16", // Model ID for gameplay elements
+    "roboflow_tutorial_model_id": "rok_tutorial/1", // Model ID for tutorial detection
+    "roboflow_gameplay_model_id": "rok_gameplay/1", // Model ID for gameplay elements
     "refresh_interval_ms": 1000, // Milliseconds between automation cycles
     "report_endpoint": "http://localhost:3000/api/stats", // Optional reporting endpoint
     "reporting_interval_s": 300 // Seconds between reports

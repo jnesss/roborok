@@ -20,13 +20,13 @@ This model identifies UI elements that primarily appear during the Rise of Kingd
 - **Model Type:** YOLOv8n for fast inference
 - **Training Dataset:** 84 annotated screenshots
 
-Playing the tutorial is a very rigid gameplay experience, making it laborious and a chore to complete for the 23948273489th time during your Rise of Kingdom play journey.  This model contains only the specific elements needed to complete the tutorial before actual game play starts.
+Playing the tutorial is a very rigid gameplay experience, making it laborious and a chore to complete for the 23948273489th time during your Rise of Kingdom play journey. This model contains only the specific elements needed to complete the tutorial before actual game play starts.
 
-The primary mechanism to navigate the tutorial is watching for both the click_arrow and the click_target to appear.  The annotated screenshots include many configurations of both the click arrow and click target.  Bright flashes of light throughout the tutorial gameplay will often result in detection of click_target.  It would be insufficient to click on each click_target.  
+The primary mechanism to navigate the tutorial is watching for both the click_arrow and the click_target to appear. The annotated screenshots include many configurations of both the click arrow and click target. Bright flashes of light throughout the tutorial gameplay will often result in detection of click_target. It would be insufficient to click on each click_target.  
 
-Similarly, the click_arrow sometimes appears a half second before the glowing click target appears.  Attempting to gauge the direction of the arrow and clicking a few pixels in that direction would be an unreliable method of completing the tutorial.  It's best to wait for both to appear and then click on the center of the click_target.  
+Similarly, the click_arrow sometimes appears a half second before the glowing click target appears. Attempting to gauge the direction of the arrow and clicking a few pixels in that direction would be an unreliable method of completing the tutorial. It's best to wait for both to appear and then click on the center of the click_target.  
 
-All code related to tutorial detection and automation is present in one file:  internal/actions/tutorial.go.  It's fairly simple to understand and once you train a model with the included screenshots, you'll get very high probability detection indicators (95+%) and reliable tutorial completion.
+All code related to tutorial detection and automation is present in one file: internal/actions/tutorial.go. It's fairly simple to understand and once you train a model with the included screenshots, you'll get very high probability detection indicators (95+%) and reliable tutorial completion.
 
 ### 2. Gameplay Detection Model
 
@@ -41,43 +41,93 @@ This model detects in-game elements during normal gameplay:
 - **Model Type:** YOLOv8s for balanced speed/accuracy
 - **Training Dataset:** 130+ annotated screenshots
 
-Actual game play is, of course, much more complex.  Every screen will have multiple detection classes reported.  The Go code logic is included in the Go files build-order.go, navigation.go, quests.go, scout.go, second-builder.go, tavern.go, trees.go, troops.go, and vip.go.
+Actual game play is, of course, much more complex. Every screen will have multiple detection classes reported. The Go code logic is included in the Go files build-order.go, navigation.go, quests.go, scout.go, second-builder.go, tavern.go, trees.go, troops.go, and vip.go.
 
 ## Training Resources
 
 To train your own models, you are welcome to use our annotated datasets:
 
-1. [Download Tutorial Dataset (COCO JSON)](https://drive.google.com/your-link-here)
-2. [Download Gameplay Dataset (COCO JSON)](https://drive.google.com/your-link-here)
+1. [Download Tutorial Dataset (COCO JSON)](https://drive.google.com/file/d/1o1_uxwquFUdRF7H27NZo49rKIhQ5BpA5/view?usp=sharing)
+2. [Download Gameplay Dataset (COCO JSON)](https://drive.google.com/file/d/1nUejCGeHmUt_EK4fsrqm-GVG5-A0Jf9r/view?usp=sharing)
 
 ## Training Process
 
-### Step 1: Import Dataset to Roboflow
+### Step 1: Create a New Project
 
 1. Create a free Roboflow account at [roboflow.com](https://roboflow.com)
-2. Create a new project (Object Detection type)
-3. Upload the downloaded dataset (drag and drop the folder)
-4. Verify annotations are correctly imported
+2. Click "Create New Project" and select "Object Detection" as the project type
+3. Name your project (e.g., "rok_tutorial" or "rok_gameplay")
 
-![Dataset Import](https://path-to-screenshot-of-import.png)
+![Create New Project](images/newproject14.png)
 
-### Step 2: Train Your Model
+### Step 2: Import Dataset to Roboflow
 
-1. Generate a version of your dataset
-   - Add preprocessing: Auto-Orient, Resize (640x480)
-   - Add augmentations: Brightness +/- 7%
+1. Upload the downloaded dataset (drag and drop the folder)
+2. The platform will process your images and annotations
 
-2. Click "Train a Model"
-   - Select RoboFlow v3 for tutorial model
-   - Use MS COCO checkpoint
+![Uploading Dataset](images/newproject12.png)
 
-![Model Training](https://path-to-screenshot-of-training.png)
+3. After upload completes, you'll see your images with annotations
+4. Click "Add Images to Dataset" to finalize the import
 
-### Step 3: Deploy Model
+![Adding Images to Dataset](images/newproject10.png)
+
+### Step 3: Generate a Dataset Version
+
+1. Create a new version of your dataset
+2. Configure preprocessing:
+   - Auto-Orient: Applied
+   - Resize: Stretch to 640×480
+
+![Configure Resize Settings](images/newproject7.png)
+
+3. Add augmentations for improved performance:
+   - Brightness: ±10%
+
+![Configure Brightness Augmentation](images/newproject6.png)
+
+4. Review train/validation/test splits
+   - Training Set: ~80% of images
+   - Validation Set: ~10% of images 
+   - Testing Set: ~10% of images
+
+![Train/Test Split](images/newproject8.png)
+
+5. Click "Create" to generate your dataset version
+
+### Step 4: Train Your Model
+
+1. Go to the Train tab and click "Start Training"
+2. Select model architecture: Roboflow 3.0
+
+![Select Model Architecture](images/newproject3.png)
+
+3. Choose training checkpoint: MS COCO
+
+![Select Training Checkpoint](images/newproject1.png)
+
+4. Select model size (Fast for tutorial model, Accurate for gameplay)
+
+![Select Model Size](images/newproject2.png)
+
+5. Click "Start Training" and wait for the model to complete training (usually takes 1-2 hours)
+
+### Step 5: Deploy Model
 
 1. Once training completes, go to the "Deploy" tab
 2. Copy your model ID and API key
-3. Update your `config.json` with these values
+3. Update your `config.json` with these values:
+
+```json
+{
+  "global": {
+    "roboflow_api_key": "YOUR_API_KEY",
+    "roboflow_tutorial_model_id": "rok_tutorial/1",
+    "roboflow_gameplay_model_id": "rok_gameplay/1",
+    ...
+  }
+}
+```
 
 ## Annotation Guidelines
 
@@ -88,7 +138,7 @@ If you want to expand the dataset:
    - Label all interactive elements and indicators
    - Ensure each civilization option is labeled in multiple orientations
    
-The Tutorial flow is configured to work well for China, my preferred starting civilization.  Very little testing has been done to support other civilization choices so that would be a great place to do more screenshots and labeling.
+The Tutorial flow is configured to work well for China, my preferred starting civilization. Very little testing has been done to support other civilization choices so that would be a great place to do more screenshots and labeling.
 
 2. **Gameplay Model:**
    - Capture screenshots in both city and field views

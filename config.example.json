@@ -1,37 +1,37 @@
 {
   "global": {
-    "roboflow_api_key": "API_KEY_HERE",
-    "roboflow_tutorial_model_id": "rok_tutorial/7",
-    "roboflow_gameplay_model_id": "rok_gameplay/16",
-    "refresh_interval_ms": 1000,
-    "report_endpoint": "http://localhost:3000/api/stats",
-    "reporting_interval_s": 300
+    "roboflow_api_key": "YOUR_API_KEY_HERE", // Your Roboflow API key from dashboard
+    "roboflow_tutorial_model_id": "rok_tutorial/7", // Model ID for tutorial detection
+    "roboflow_gameplay_model_id": "rok_gameplay/16", // Model ID for gameplay elements
+    "refresh_interval_ms": 1000, // Milliseconds between automation cycles
+    "report_endpoint": "http://localhost:3000/api/stats", // Optional reporting endpoint
+    "reporting_interval_s": 300 // Seconds between reports
   },
   "instances": {
     "instance1": {
-      "device_id": "127.0.0.1:5555",
-      "preferred_civilization": "china",
-      "claim_quests": true,
-      "claim_only_main_quest": false,
-      "enable_scout_micromanagement": true
+      "device_id": "127.0.0.1:5555", // ADB device ID (usually emulator address)
+      "preferred_civilization": "china", // Civilization to select in tutorial
+      "claim_quests": true, // Auto-claim completed quests
+      "claim_only_main_quest": false, // Set to true to focus on main quest line
+      "enable_scout_micromanagement": true // Enable scout automation
     }
   },
   "gameplay": {
-    "adb_path": "/Applications/BlueStacks.app/Contents/MacOS/hd-adb",
+    "adb_path": "/Applications/BlueStacks.app/Contents/MacOS/hd-adb", // Path to ADB executable
     "startup_tasks": [
-      "clear_trees",
-      "recruit_second_builder"
+      "clear_trees", // Remove trees to make space for buildings
+      "recruit_second_builder" // Get second builder for faster progress
     ],
-    "max_city_hall_level": 25,
-    "preferred_alliance": "YourAllianceName",
-    "join_random_alliance": true,
-    "research_path": [
+    "max_city_hall_level": 25, // Target city hall level
+    "preferred_alliance": "YourAllianceName", // Alliance to join if available
+    "join_random_alliance": true, // Join random alliance if preferred not found
+    "research_path": [ // Research technologies in this order
       "agriculture",
       "military_science",
       "iron_working",
       "mathematics"
     ],
-    "building_levels": {
+    "building_levels": { // Maximum building levels to target
       "city_hall": 25,
       "barracks": 25,
       "archery_range": 25,
@@ -39,7 +39,7 @@
       "siege_workshop": 25,
       "academy": 25
     },
-    "troop_levels": {
+    "troop_levels": { // Troop training priorities (0 = max available)
       "infantry": 0,
       "archers": 0,
       "cavalry": 0,

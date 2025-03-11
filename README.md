@@ -31,7 +31,7 @@ A sophisticated automation system that uses Roboflow's computer vision capabilit
    ./roborok
    ```
 
-Watch the [demo video]([https://youtube.com/your-video-link](https://www.youtube.com/watch?v=Z8XkNGI6F4w)) to see it in action (9 minutes)!
+Watch the [demo video](https://www.youtube.com/watch?v=Z8XkNGI6F4w) to see it in action (9 minutes)!
 
 ## 🔍 Project Overview
 

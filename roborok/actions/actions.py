@@ -106,23 +106,29 @@ def handle_build_order(
 ) -> bool:
     """
     Process the build order tasks
-    
-    Args:
-        device_id: Device ID
-        game_view: Current game view (city, map, etc.)
-        detections: List of detections from current screen
-        adb_path: Path to ADB executable
-        config: Task configuration
-        instance_state: Current instance state
-        
-    Returns:
-        True if a building was upgraded or built, False otherwise
     """
+    logger = logging.getLogger("actions.upgrade_building")
+    
     # Initialize the build queue if necessary
     if not hasattr(instance_state, 'building_tasks') or not instance_state.building_tasks:
         logger.info("Initializing build queue for the first time")
         instance_state.initialize_build_queue()
     
+    # Check if we've completed all building tasks
+    if not hasattr(instance_state, 'current_task_index'):
+        instance_state.current_task_index = 0
+    
+    # If we're at the end, check for skipped tasks
+    if instance_state.current_task_index >= len(instance_state.building_tasks):
+        logger.info("At end of task list, checking for any skipped tasks to retry")
+        instance_state._reset_to_skipped_task(10)  # 10-second cooldown
+    
+    # If still at the end after checking skipped tasks, nothing to do
+    if instance_state.current_task_index >= len(instance_state.building_tasks):
+        logger.info("All building tasks completed, nothing to do")
+        return False
+    
+    # Rest of the function remains the same
     return handle_upgrade_building(device_id, game_view, detections, adb_path, config, instance_state)
     
 
@@ -581,7 +587,7 @@ def handle_upgrade_building(
 ) -> bool:
     """
     Handle upgrading buildings based on the ordered build queue
-    
+   
     Args:
         device_id: Device ID
         game_view: Current game view (city, map, etc.)
@@ -619,76 +625,108 @@ def handle_upgrade_building(
     
     logger.info(f"Current building task: {current_task.type} {current_task.building}")
     
-    # First, check if builders are available by checking the builders hut
+    # Check if builders are available
     logger.info("Checking builder availability by inspecting builders hut")
+    
+    # Debug log all detections to troubleshoot
+    #logger.info(f"Found {len(detections)} detections. Looking for builders_hut or builders_hut_button")
+    #for i, det in enumerate(detections):
+    #    if det.confidence > 0.5:  # Only log higher confidence detections
+    #        logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
     
     # Find the builders hut
     builders_hut = None
+    builders_hut_button = None
+    
     for detection in detections:
-        if (detection.class_name == "builders_hut_idle" or detection.class_name == "builders_hut") and detection.is_confident():
+        if detection.class_name == "builders_hut" and detection.is_confident():
+            logger.info(f"Found builders_hut with confidence {detection.confidence:.2f}")
             builders_hut = detection
             break
+        elif detection.class_name == "builders_hut_idle" and detection.is_confident():
+            logger.info(f"Found builders_hut_idle with confidence {detection.confidence:.2f}")
+            builders_hut = detection
+            break
+        elif detection.class_name == "builders_hut_button" and detection.confidence > 0.3:
+            logger.info(f"Found builders_hut_button with confidence {detection.confidence:.2f}")
+            builders_hut_button = detection
     
-    if builders_hut is None:
-        logger.info("Builder's Hut not found in detections")
+    # Path 1: If we found the builder's hut, click on it first
+    if builders_hut is not None:
+        logger.info(f"Clicking on Builder's Hut at ({builders_hut.x}, {builders_hut.y})")
+        if not tap_screen(device_id, adb_path, int(builders_hut.x), int(builders_hut.y)):
+            logger.error("Error clicking on Builder's Hut")
+            return False
+        
+        # Wait for builders hut menu to appear
+        time.sleep(2)
+        
+        # Take a fresh screenshot and analyze
+        try:
+            config_data = load_config("config.json")
+            api_key = config_data["global"]["roboflow_api_key"]
+            model_id = config_data["global"]["roboflow_gameplay_model_id"]
+            
+            menu_detections = capture_and_detect(device_id, adb_path, api_key, model_id, 4)
+            
+            # Debug log all detections to troubleshoot
+            #logger.info(f"After clicking builders_hut, found {len(menu_detections)} detections. Looking for builders_hut_button")
+            #for i, det in enumerate(menu_detections):
+            #    if det.confidence > 0.5:  # Only log higher confidence detections
+            #        logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
+            
+            # Look for builders hut button to go to second screen
+            builders_hut_button = None
+            for det in menu_detections:
+                if det.class_name == "builders_hut_button" and det.confidence > 0.3:
+                    logger.info(f"Found builders_hut_button with confidence {det.confidence:.2f}")
+                    builders_hut_button = det
+                    break
+            
+            if builders_hut_button is None:
+                logger.info("builders_hut_button not found, exiting menu")
+                reset_view(device_id, adb_path)
+                return False
+        
+        except Exception as e:
+            logger.error(f"Error finding builders_hut_button after clicking builders_hut: {e}")
+            reset_view(device_id, adb_path)
+            return False
+    
+    # Path 2: If we didn't find builder's hut but found builders_hut_button directly
+    elif builders_hut_button is not None:
+        logger.info(f"Builder's Hut not found, but found builders_hut_button - skipping ahead")
+        # We don't need to click anything here as we've already found the button
+    else:
+        logger.info("Neither Builder's Hut nor builders_hut_button found in detections")
         return False
     
-    # Click on Builder's Hut to open interface
-    logger.info(f"Clicking on Builder's Hut at ({builders_hut.x}, {builders_hut.y})")
-    if not tap_screen(device_id, adb_path, int(builders_hut.x), int(builders_hut.y)):
-        logger.error("Error clicking on Builder's Hut")
+    # At this point we should have a valid builders_hut_button, continue with clicking it
+    logger.info(f"Clicking on builders_hut_button at ({builders_hut_button.x}, {builders_hut_button.y})")
+    if not tap_screen(device_id, adb_path, int(builders_hut_button.x), int(builders_hut_button.y)):
+        logger.error("Error clicking on builders_hut_button")
+        reset_view(device_id, adb_path)
         return False
     
-    # Wait for builders hut menu to appear
-    time.sleep(2)
+    # Wait for the queue screen to appear
+    time.sleep(1)
     
-    # Take a fresh screenshot and analyze
-    available_queues = 0
-    
+    # Take another screenshot to check queue status
     try:
         config_data = load_config("config.json")
         api_key = config_data["global"]["roboflow_api_key"]
         model_id = config_data["global"]["roboflow_gameplay_model_id"]
         
-        menu_detections = capture_and_detect(device_id, adb_path, api_key, model_id, 4)
-            
-        # Log what we see for debugging
-        #logger.info(f"Detected {len(menu_detections)} objects in builders hut menu:")
-        #for i, det in enumerate(menu_detections):
-        #    if det.is_confident():
-        #        logger.info(f"  {i+1}. {det.class_name} ({det.confidence:.2f}): ({det.x:.1f}, {det.y:.1f})")
-        
-        # Look for builders hut button to go to second screen
-        builders_hut_button = None
-        for det in menu_detections:
-            if det.class_name == "builders_hut_button" and det.confidence > 0.3:
-                builders_hut_button = det
-                break
-        
-        if builders_hut_button is None:
-            logger.info("builders_hut_button not found, exiting menu")
-            reset_view(device_id, adb_path)
-            return False
-        
-        # Click on the builders_hut_button to see queue status
-        logger.info(f"Clicking on builders_hut_button at ({builders_hut_button.x}, {builders_hut_button.y})")
-        if not tap_screen(device_id, adb_path, int(builders_hut_button.x), int(builders_hut_button.y)):
-            logger.error("Error clicking on builders_hut_button")
-            reset_view(device_id, adb_path)
-            return False
-        
-        # Wait for the queue screen to appear
-        time.sleep(1)
-        
-        # Take another screenshot to check queue status
         queue_detections = capture_and_detect(device_id, adb_path, api_key, model_id, 4)
-
-        # Log what we see for debugging
-        #logger.info(f"Detected {len(queue_detections)} objects in builders queue screen:")
-        #for i, det in enumerate(queue_detections):
-        #    if det.is_confident():
-        #        logger.info(f"  {i+1}. {det.class_name} ({det.confidence:.2f}): ({det.x:.1f}, {det.y:.1f})")
-                
+        
+        # Debug log all detections to troubleshoot
+        logger.info(f"After clicking builders_hut_button, found {len(queue_detections)} detections. Looking for builder queue indicators")
+        for i, det in enumerate(queue_detections):
+            if det.confidence > 0.5:  # Only log higher confidence detections
+                logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
+    
+        # Check for available builder queues
+        available_queues = 0
         for det in queue_detections:
             if det.class_name == "builders_hut_two_queues_available" and det.confidence > 0.6:
                 logger.info("Found two available builder queues")
@@ -726,7 +764,7 @@ def handle_upgrade_building(
         
         # If we get here, at least one builder is available
         logger.info(f"{available_queues} builder queue(s) available, proceeding with building upgrades")
-        
+    
     except Exception as e:
         logger.error(f"Error checking builder availability: {e}")
         reset_view(device_id, adb_path)
@@ -777,7 +815,7 @@ def handle_upgrade_building(
             # Record this for retry later
             skipped_tasks.append(current_task)
             # Skip to the next task
-            instance_state.skip_current_task(cooldown_minutes=10)  # Try again in 10 minutes
+            instance_state.skip_current_task(cooldown_seconds=10)  # Try again in 10 seconds
         
         tasks_processed += 1
         
@@ -967,24 +1005,6 @@ def build_new_building(
     logger.info("Waiting for confirmation dialog...")
     time.sleep(1)
     
-    # Check for alliance help request
-    logger.info("Taking screenshot to check for alliance help request...")
-    help_detections = capture_and_detect(device_id, adb_path, api_key, model_id, 4)
-    
-    # Log what we see for debugging
-    logger.info(f"Help screen detections ({len(help_detections)} total):")
-    for i, det in enumerate(help_detections):
-        if det.is_confident():
-            logger.info(f"  {i+1}. {det.class_name} ({det.confidence:.2f}): ({det.x:.1f}, {det.y:.1f})")
-    
-    # Look for alliance help button
-    for det in help_detections:
-        if det.class_name == "alliance_help_button" and det.is_confident():
-            logger.info(f"Clicking alliance help request button at ({det.x}, {det.y})")
-            tap_screen(device_id, adb_path, int(det.x), int(det.y))
-            time.sleep(0.5)
-            break
-
     logger.info("Build operation complete, resetting view...")
     reset_view(device_id, adb_path)
     return True
@@ -1102,7 +1122,7 @@ def upgrade_building(
     
     # Wait for upgrade dialog
     logger.info("Waiting for upgrade dialog to appear...")
-    time.sleep(0.8)
+    time.sleep(2)
     
     # Take another screenshot to find confirmation button
     logger.info("Taking screenshot to find confirmation button...")

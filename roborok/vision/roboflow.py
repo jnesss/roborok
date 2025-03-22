@@ -158,8 +158,9 @@ def capture_and_detect(device_id: str, adb_path: str, api_key: str, model_id: st
     high_priority_elements = [
         "help_chat_bubble",  # Handle help bubbles first as they block interaction
         "farm_clickable", 
-        #"archery_range_clickable",
-        "alliance_help_requested",
+        "lumber_mill_clickable",
+        "alliance_help_request",
+        # "alliance_invite_join",  # Removed from direct click list - will handle specially
         # Add more elements here in order of priority
     ]
     
@@ -178,14 +179,33 @@ def capture_and_detect(device_id: str, adb_path: str, api_key: str, model_id: st
             time.sleep(0.5)
             continue
         
-        # Check for high-priority clickables in order of priority
+        # Special case: Check for alliance invite dialog
+        has_alliance_invite = False
+        has_exit_button = False
+        exit_button = None
+        
+        for det in detections:
+            if det.class_name == "alliance_invite_join" and det.is_confident(0.4):
+                has_alliance_invite = True
+            elif det.class_name == "exit_dialog_button" and det.is_confident(0.4):
+                has_exit_button = True
+                exit_button = det
+        
+        # If we have both alliance invite and exit button, click the exit button
+        if has_alliance_invite and has_exit_button and exit_button is not None:
+            logger.info(f"Found alliance invite dialog, clicking exit button at ({exit_button.x}, {exit_button.y})")
+            tap_screen(device_id, adb_path, int(exit_button.x), int(exit_button.y))
+            time.sleep(0.5)  # Wait for action to register
+            continue  # Get fresh detections
+            
+        # Check for other high-priority clickables in order of priority
         high_priority_found = False
         
         # First, collect all high-priority elements present
         priority_detections = []
         for priority_class in high_priority_elements:
             for det in detections:
-                if det.class_name == priority_class and det.is_confident():
+                if det.class_name == priority_class and det.is_confident(0.4):
                     priority_detections.append(det)
         
         # If we found any high-priority elements, click the highest priority one

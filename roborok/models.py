@@ -1,10 +1,11 @@
 # roborok/models.py
 """Data models for RoboRok"""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 import time
+import logging
 
 @dataclass
 class Detection:
@@ -16,7 +17,7 @@ class Detection:
     height: float
     confidence: float
     
-    def is_confident(self, min_confidence: float = 0.7) -> bool:
+    def is_confident(self, min_confidence: float = 0.6) -> bool:
         """Check if the detection meets the confidence threshold"""
         return self.confidence >= min_confidence
         
@@ -69,19 +70,19 @@ def default_build_queue() -> List[BuildTask]:
         BuildTask(type="upgrade", building="cityhall", detect_class="cityhall"), # 3
         
         # Level 2 buildings
-        # BuildTask(type="build_new", building="archery_range", detect_class="military:build_archery_range"), # 1
+        BuildTask(type="build_new", building="archery_range", detect_class="military:build_archery_range"), # 1
         BuildTask(type="upgrade", building="barracks", detect_class="barracks"), # 2
         BuildTask(type="upgrade", building="scout_camp", detect_class="scout_camp"), # 2
         BuildTask(type="upgrade", building="farm", detect_class="farm"), # 2
         BuildTask(type="upgrade", building="tavern", detect_class="tavern"), # 2
         BuildTask(type="upgrade", building="farm", detect_class="farm"),  # 3
         BuildTask(type="upgrade", building="hospital", detect_class="hospital"), # 2
-        BuildTask(type="build_new", building="lumber_mill", detect_class="economic:build_lumber_mill"), # 1
         BuildTask(type="upgrade", building="wall", detect_class="wall"), # 2
+        BuildTask(type="build_new", building="lumber_mill", detect_class="economic:build_lumber_mill"), # 1
         BuildTask(type="upgrade", building="lumber_mill", detect_class="lumber_mill"), # 2
         
         # Probably ready by now for City Hall level 3
-        BuildTask(type="upgrade", building="cityhall", detect_class="cityhall"),  # 3
+        BuildTask(type="upgrade", building="cityhall", detect_class="cityhall"),  # 4
         BuildTask(type="upgrade", building="lumber_mill", detect_class="lumber_mill"),  # 3
         
         # Level 3 buildings
@@ -93,6 +94,7 @@ def default_build_queue() -> List[BuildTask]:
         BuildTask(type="upgrade", building="lumber_mill", detect_class="lumber_mill"), # 4
         
         # Add more tasks as needed for higher levels
+        
     ]
 
 @dataclass
@@ -108,6 +110,7 @@ class InstanceState:
     city_hall_level: int = 1
     last_screenshot_path: str = ""
     last_report_time: datetime = field(default_factory=lambda: datetime.min)
+    preferred_civilization: str = "china"  
     
     # Building tracking fields
     building_tasks: List[BuildTask] = field(default_factory=list)  # Ordered list of building tasks
@@ -143,6 +146,12 @@ class InstanceState:
             # Make a copy to avoid modifying the original
             data_copy = data.copy()
         
+            # Remove fields that aren't part of the class
+            valid_fields = [f.name for f in fields(cls)]
+            for key in list(data_copy.keys()):
+                if key not in valid_fields:
+                    del data_copy[key]
+        
             # Handle datetime conversion
             if 'last_report_time' in data_copy and isinstance(data_copy['last_report_time'], str):
                 try:
@@ -165,7 +174,6 @@ class InstanceState:
             print(f"Error in from_dict: {e}")
             # Return a default instance as fallback
             return cls(id=data.get("id", "unknown"), device_id=data.get("device_id", "unknown"))
-        
 
     def initialize_build_queue(self) -> None:
         """Initialize the build queue if it's empty"""
@@ -186,46 +194,52 @@ class InstanceState:
             self.building_tasks[self.current_task_index].completed = True
             self.current_task_index += 1
     
-    def skip_current_task(self, cooldown_minutes: int = 10) -> None:
+    def skip_current_task(self, cooldown_seconds: int = 10) -> None:
         """
         Skip the current task temporarily and move to the next one
-        
+    
         Args:
-            cooldown_minutes: How many minutes to wait before retrying this task
+            cooldown_seconds: How many seconds to wait before retrying this task
         """
         if self.building_tasks and self.current_task_index < len(self.building_tasks):
             # Increment skip counter and record timestamp
             self.building_tasks[self.current_task_index].skipped_attempts += 1
             self.building_tasks[self.current_task_index].last_attempted = time.time()
-            
+        
             # Move to the next task
             self.current_task_index += 1
-            
+        
             # If we've reached the end of the list, try to find any skipped tasks that can be retried
             if self.current_task_index >= len(self.building_tasks):
-                self._reset_to_skipped_task(cooldown_minutes)
-    
-    def _reset_to_skipped_task(self, cooldown_minutes: int) -> None:
+                self._reset_to_skipped_task(cooldown_seconds)
+            
+    def _reset_to_skipped_task(self, cooldown_seconds: int) -> None:
         """
         Try to find a skipped task that's ready to be retried
-        
+    
         Args:
-            cooldown_minutes: Minimum minutes before retrying a skipped task
+            cooldown_seconds: Minimum seconds before retrying a skipped task
         """
-        min_cooldown_sec = cooldown_minutes * 60
         current_time = time.time()
+    
+        logger = logging.getLogger("models")
+        logger.info(f"Checking for skipped tasks ready to retry (cooldown: {cooldown_seconds}s)")
         
         # Find the earliest skipped task that's past its cooldown
         for i, task in enumerate(self.building_tasks):
             if not task.completed and task.skipped_attempts > 0 and task.last_attempted is not None:
                 time_elapsed = current_time - task.last_attempted
-                if time_elapsed >= min_cooldown_sec:
+                if time_elapsed >= cooldown_seconds:
+                    logger.info(f"Found skipped task ready for retry: {task.building} ({time_elapsed:.1f}s elapsed)")
                     self.current_task_index = i
                     return
-        
+                else:
+                    logger.info(f"Skipped task not ready yet: {task.building} ({time_elapsed:.1f}s elapsed, need {cooldown_seconds}s)")
+
+        logger.info("No skipped tasks ready for retry, staying at end of list")
+            
         # If no tasks can be retried, just keep at the end
         self.current_task_index = len(self.building_tasks)
-    
     
 @dataclass
 class OCRResult:

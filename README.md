@@ -114,7 +114,7 @@ roborok/
 
 ## 🔧 Setup and Configuration
 
-See the [detailed setup guide](docs/SETUP.md) for complete installation instructions.
+See the [detailed setup guide](SETUP.md) for complete installation instructions.
 
 ### Configuration Example
 
@@ -146,7 +146,7 @@ See the [detailed setup guide](docs/SETUP.md) for complete installation instruct
 
 ## 🧪 Training Custom Computer Vision Models
 
-You can train your own computer vision models for RoboRok. Follow our [training guide](docs/TRAINING_DATA.md).
+You can train your own computer vision models for RoboRok. Follow our [training guide](TRAINING_DATA.md).
 
 ## 🤝 Contributing
 

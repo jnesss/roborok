@@ -1,0 +1,25 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# State and runtime files
+config.json
+screenshots/
+instance_states.json
+*.log
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test artifacts
+.coverage
+htmlcov/
+.pytest_cache/

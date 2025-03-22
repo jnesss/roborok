@@ -58,7 +58,7 @@ To train your own models, you are welcome to use our annotated datasets:
 2. Click "Create New Project" and select "Object Detection" as the project type
 3. Name your project (e.g., "rok_tutorial" or "rok_gameplay")
 
-![Create New Project](images/newproject1.png)
+![Create New Project](docs/images/newproject1.png)
 
 ### Step 2: Import Dataset to Roboflow
 
@@ -66,11 +66,11 @@ To train your own models, you are welcome to use our annotated datasets:
 2. The platform will process your images and annotations
 3. After upload completes, you'll see your images with annotations
 
-![Uploading Dataset](images/newproject2.png)
+![Uploading Dataset](docs/images/newproject2.png)
 
 4. Click "Add Approved to Dataset" to finalize the import
 
-![Adding Images to Dataset](images/newproject4.png)
+![Adding Images to Dataset](docs/images/newproject4.png)
 
 ### Step 3: Generate a Dataset Version
 
@@ -79,13 +79,13 @@ To train your own models, you are welcome to use our annotated datasets:
    - Auto-Orient: Applied
    - Resize: Stretch to 640×480 (aspect ratio of captured screenshots)
 
-![Configure Resize Settings](images/newproject7.png)
-![Configure Resize Settings](images/newproject8.png)
+![Configure Resize Settings](docs/images/newproject7.png)
+![Configure Resize Settings](docs/images/newproject8.png)
 
 3. Add augmentations for improved performance:
    - Brightness: ±10%
 
-![Configure Brightness Augmentation](images/newproject9.png)
+![Configure Brightness Augmentation](docs/images/newproject9.png)
 
 4. Review train/validation/test splits
    - Training Set: ~80% of images
@@ -93,22 +93,22 @@ To train your own models, you are welcome to use our annotated datasets:
    - Testing Set: ~10% of images
 5. Click "Create" to generate your dataset version
 
-![Configure Brightness Augmentation](images/newproject10.png)
+![Configure Brightness Augmentation](docs/images/newproject10.png)
 
 ### Step 4: Train Your Model
 
 1. Go to the Train tab and click "Start Training"
 2. Select model architecture: Roboflow 3.0
 
-![Select Model Architecture](images/newproject12.png)
+![Select Model Architecture](docs/images/newproject12.png)
 
 3. Select model size (Accurate is fine for turn-based gameplay)
 
-![Select Model Size](images/newproject13.png)
+![Select Model Size](docs/images/newproject13.png)
 
 4. Choose training checkpoint: MS COCO
 
-![Select Training Checkpoint](images/newproject14.png)
+![Select Training Checkpoint](docs/images/newproject14.png)
 
 5. Click "Start Training" and wait for the model to complete training (may take 1-2 hours if you added 10x images)
 

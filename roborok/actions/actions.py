@@ -5,11 +5,15 @@ import time
 import logging
 from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime, timedelta
+import re
+import numpy as np
+import cv2
 
 from roborok.models import Detection, OCRResult, GameResources, InstanceState, BuildTask
 from roborok.vision.screenshot import get_image_from_bytes
-from roborok.vision.roboflow import capture_and_detect
-from roborok.vision.ocr import process_game_text
+from roborok.vision import capture_screenshot, get_image_from_bytes, capture_and_detect
+from roborok.vision.general_ocr import process_game_text
+from roborok.vision.time_ocr import TimeOCR
 from roborok.utils.adb import tap_screen
 
 def extract_resources(ocr_results: List[OCRResult]) -> GameResources:
@@ -604,6 +608,15 @@ def handle_upgrade_building(
     
     logger = logging.getLogger("actions.upgrade_building")
     
+    # Check if we're in a builder check cooldown period
+    current_time = time.time()
+    if hasattr(instance_state, 'next_builder_check_time'):
+        next_check_time = getattr(instance_state, 'next_builder_check_time')
+        if current_time < next_check_time:
+            time_remaining = int(next_check_time - current_time)
+            logger.info(f"In builder check cooldown period. {time_remaining} seconds remaining.")
+            return False
+    
     # Skip if not in city view
     if game_view != "city":
         logger.info("Not in city view, skipping building upgrade")
@@ -629,10 +642,10 @@ def handle_upgrade_building(
     logger.info("Checking builder availability by inspecting builders hut")
     
     # Debug log all detections to troubleshoot
-    #logger.info(f"Found {len(detections)} detections. Looking for builders_hut or builders_hut_button")
-    #for i, det in enumerate(detections):
-    #    if det.confidence > 0.5:  # Only log higher confidence detections
-    #        logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
+    logger.info(f"Found {len(detections)} detections. Looking for builders_hut or builders_hut_button")
+    for i, det in enumerate(detections):
+        if det.confidence > 0.5:  # Only log higher confidence detections
+            logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
     
     # Find the builders hut
     builders_hut = None
@@ -670,10 +683,10 @@ def handle_upgrade_building(
             menu_detections = capture_and_detect(device_id, adb_path, api_key, model_id, 4)
             
             # Debug log all detections to troubleshoot
-            #logger.info(f"After clicking builders_hut, found {len(menu_detections)} detections. Looking for builders_hut_button")
-            #for i, det in enumerate(menu_detections):
-            #    if det.confidence > 0.5:  # Only log higher confidence detections
-            #        logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
+            logger.info(f"After clicking builders_hut, found {len(menu_detections)} detections. Looking for builders_hut_button")
+            for i, det in enumerate(menu_detections):
+                if det.confidence > 0.5:  # Only log higher confidence detections
+                    logger.info(f"  Detection {i+1}: {det.class_name} (conf: {det.confidence:.2f}) at ({det.x:.1f}, {det.y:.1f})")
             
             # Look for builders hut button to go to second screen
             builders_hut_button = None
@@ -727,6 +740,8 @@ def handle_upgrade_building(
     
         # Check for available builder queues
         available_queues = 0
+        builder_times = []
+        
         for det in queue_detections:
             if det.class_name == "builders_hut_two_queues_available" and det.confidence > 0.6:
                 logger.info("Found two available builder queues")
@@ -736,6 +751,137 @@ def handle_upgrade_building(
                 logger.info("Found builder queue available")
                 available_queues = 1
                 # keep looking through list (don't break) because we might find two queues available
+            elif det.class_name == "builder_time_remaining" and det.confidence > 0.2:
+                builder_times.append(det)
+            
+        # If no queues are available but we found builder time elements
+        # If no queues are available but we found builder time elements
+        if available_queues == 0 and builder_times:
+            logger.info(f"Found {len(builder_times)} builder time indicators")
+
+            # Load the TimeOCR model only if needed
+            try:
+                from roborok.vision.time_ocr import TimeOCR
+                import os
+                from PIL import Image as PILImage
+                import datetime
+    
+                # Create debug directory if it doesn't exist
+                debug_dir = "debug_ocr_images"
+                os.makedirs(debug_dir, exist_ok=True)
+    
+                time_ocr = TimeOCR()
+                logger.info("Loaded TimeOCR model")
+    
+                # Get the original screenshot image
+                screenshot_bytes = capture_screenshot(device_id, adb_path)
+                image = get_image_from_bytes(screenshot_bytes)
+    
+                if image:
+                    found_times = []
+                    timestamp = int(time.time())
+        
+                    # Save the full screenshot for reference
+                    full_image_path = os.path.join(debug_dir, f"full_screenshot_{timestamp}.png")
+                    image.save(full_image_path)
+        
+                    # Create a log file for this inspection
+                    log_file_path = os.path.join(debug_dir, f"ocr_log_{timestamp}.txt")
+        
+                    # Helper function to log to both console and file
+                    def dual_log(message):
+                        logger.info(message)
+                        with open(log_file_path, 'a') as log_file:
+                            log_file.write(f"{datetime.datetime.now().isoformat()} - {message}\n")
+        
+                    dual_log(f"Saved full screenshot to {full_image_path}")
+                    dual_log(f"Found {len(builder_times)} builder time indicators")
+        
+                    all_times_over_one_minute = True
+        
+                    for i, det in enumerate(builder_times):
+                        try:
+                            # Extract region from image
+                            x1, y1, x2, y2 = det.get_crop_coordinates()
+                            cropped_region = image.crop((x1, y1, x2, y2))
+                
+                            # Save the cropped region
+                            crop_path = os.path.join(debug_dir, f"builder_time_{timestamp}_{i}.png")
+                            cropped_region.save(crop_path)
+                
+                            # Create a specific log file for this crop
+                            crop_log_path = f"{crop_path}.txt"
+                
+                            # Log crop details
+                            dual_log(f"Saved cropped region to {crop_path}")
+                
+                            # Convert to numpy array for prediction
+                            time_region = np.array(cropped_region)
+                            
+                            # Save a copy of the processed image that will be passed to PyTorch
+                            # This is the key addition
+                            processed_region = time_ocr.preprocess_for_debug(time_region)  # New helper method
+                            processed_path = os.path.join(debug_dir, f"processed_{timestamp}_{i}.png")
+                            cv2.imwrite(processed_path, processed_region * 255)  # Denormalize for visualization
+                            dual_log(f"Saved processed region to {processed_path}")
+                
+                            # Perform OCR
+                            time_text = time_ocr.predict(time_region)
+                
+                            # Calculate confidence scores for each digit
+                            confidences = time_ocr.get_digit_confidences()
+                            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+                            min_confidence = min(confidences) if confidences else 0
+                
+                            # Log detailed results
+                            dual_log(f"OCR detected time: {time_text} for builder time at ({det.x}, {det.y})")
+                            dual_log(f"Confidence scores - Avg: {avg_confidence:.2f}, Min: {min_confidence:.2f}")
+                            dual_log(f"Individual digit confidences: {confidences}")
+                
+                            # Save detailed results to crop-specific log file
+                            with open(crop_log_path, 'w') as crop_log:
+                                crop_log.write(f"OCR detected time: {time_text}\n")
+                                crop_log.write(f"For builder time at ({det.x}, {det.y})\n")
+                                crop_log.write(f"Confidence scores - Avg: {avg_confidence:.2f}, Min: {min_confidence:.2f}\n")
+                                crop_log.write(f"Individual digit confidences: {confidences}\n")
+                
+                            # Use all time values regardless of confidence
+                            found_times.append(time_text)
+                            dual_log(f"Using time prediction: {time_text} (min conf: {min_confidence:.2f})")
+                
+                            # Check if time is less than 1 minute
+                            time_parts = time_text.split(':')
+                            if len(time_parts) == 3:
+                                hours, minutes, seconds = map(int, time_parts)
+                                if hours == 0 and minutes == 0:
+                                    all_times_over_one_minute = False
+                        
+                        except Exception as e:
+                            logger.error(f"Error processing time OCR: {e}")
+                            with open(log_file_path, 'a') as log_file:
+                                log_file.write(f"{datetime.datetime.now().isoformat()} - Error: {e}\n")
+        
+                    if found_times:
+                        dual_log(f"Builders are busy with remaining times: {', '.join(found_times)}")
+            
+                        # If all detected times are over one minute and we have at least 2 times
+                        if all_times_over_one_minute and len(found_times) >= 2:
+                            dual_log("All builder times > 1 minute, introducing a 60-second cooldown")
+                
+                            # Set a custom attribute on instance_state to track the next check time
+                            next_check_time = time.time() + 60  # 60 seconds from now
+                            setattr(instance_state, 'next_builder_check_time', next_check_time)
+                
+                            # Format the next check time for logging
+                            next_check_datetime = datetime.datetime.fromtimestamp(next_check_time)
+                            dual_log(f"Next builder check scheduled for: {next_check_datetime.isoformat()}")
+                
+                            # Skip further processing and exit builder check
+                            reset_view(device_id, adb_path)
+                            return False
+            
+            except Exception as e:
+                logger.error(f"Error using TimeOCR: {e}")
         
         # First exit the builder dialog by clicking the exit button
         exit_button = None

@@ -148,6 +148,10 @@ See the [detailed setup guide](SETUP.md) for complete installation instructions.
 
 You can train your own computer vision models for RoboRok. Follow our [training guide](TRAINING_DATA.md).
 
+## 📖 Related Content
+
+[**Recursive Automation: Using AI to Train Better AI for Game Bots**](https://jnesss.github.io/2025/03/23/recursive-automation.html) - Detailed blog post about the development process, challenges in OCR implementation, and how Claude AI was used to help train the computer vision models.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

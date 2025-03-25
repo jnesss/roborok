@@ -152,7 +152,7 @@ You can train your own computer vision models for RoboRok. Follow our [training 
 
 - [**Recursive Automation: Using AI to Train Better AI for Game Bots**](https://jnesss.github.io/2025/03/23/recursive-automation.html) - Detailed blog post about the development process, challenges in OCR implementation, and how Claude AI was used to help train the computer vision models.
 
-- [**Video Demo: RoboRok in Action**](https://youtube.com/your-video-url-here) - Early demonstration of the project showing how computer vision is used to automate the Rise of Kingdoms tutorial. Note: The project has evolved from Go to Python since this video was created, but the core concepts remain the same.
+- [**Video Demo: RoboRok in Action**](https://youtu.be/Z8XkNGI6F4w) - Early demonstration of the project showing how computer vision is used to automate the Rise of Kingdoms tutorial. Note: The project has evolved from Go to Python since this video was created, but the core concepts remain the same.
   
 ## 🤝 Contributing
 
